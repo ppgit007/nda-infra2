@@ -42,6 +42,12 @@ variable "public_network_access_enabled" {
   default     = true
 }
 
+variable "enable_diagnostics" {
+  description = "Whether to create diagnostic settings. Known at plan time; gates the diagnostic count."
+  type        = bool
+  default     = false
+}
+
 variable "monitor_diagnostic_workspace_id" {
   description = "Log Analytics workspace ID for diagnostic settings. When null, no diagnostic setting is created."
   type        = string

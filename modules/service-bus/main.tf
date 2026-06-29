@@ -14,12 +14,12 @@ resource "azurerm_servicebus_namespace" "service_bus" {
 # Optional diagnostic settings -> Log Analytics. Created only when a workspace id
 # is supplied. Categories are discovered dynamically to stay provider/version safe.
 data "azurerm_monitor_diagnostic_categories" "service_bus" {
-  count       = var.monitor_diagnostic_workspace_id != null ? 1 : 0
+  count       = var.enable_diagnostics ? 1 : 0
   resource_id = azurerm_servicebus_namespace.service_bus.id
 }
 
 resource "azurerm_monitor_diagnostic_setting" "service_bus" {
-  count                      = var.monitor_diagnostic_workspace_id != null ? 1 : 0
+  count                      = var.enable_diagnostics ? 1 : 0
   name                       = "diag-${var.name}"
   target_resource_id         = azurerm_servicebus_namespace.service_bus.id
   log_analytics_workspace_id = var.monitor_diagnostic_workspace_id

@@ -38,12 +38,12 @@ resource "azurerm_storage_account" "storage_account" {
 # Optional diagnostic settings -> Log Analytics. Created only when a workspace id
 # is supplied. Categories are discovered dynamically to stay provider/version safe.
 data "azurerm_monitor_diagnostic_categories" "storage_account" {
-  count       = var.monitor_diagnostic_workspace_id != null ? 1 : 0
+  count       = var.enable_diagnostics ? 1 : 0
   resource_id = azurerm_storage_account.storage_account.id
 }
 
 resource "azurerm_monitor_diagnostic_setting" "storage_account" {
-  count                      = var.monitor_diagnostic_workspace_id != null ? 1 : 0
+  count                      = var.enable_diagnostics ? 1 : 0
   name                       = "diag-${var.name}"
   target_resource_id         = azurerm_storage_account.storage_account.id
   log_analytics_workspace_id = var.monitor_diagnostic_workspace_id

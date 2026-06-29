@@ -41,6 +41,7 @@ module "key_vault" {
   location                        = var.location
   resource_group_name             = data.azurerm_resource_group.target_rg.name
   tenant_id                       = var.tenant_id
+  enable_diagnostics              = local.module_enabled.log_analytics
   monitor_diagnostic_workspace_id = try(module.log_analytics["enabled"].id, null)
   tags                            = local.common_tags
 }
@@ -52,6 +53,7 @@ module "service_bus" {
   name                            = local.names.service_bus
   location                        = var.location
   resource_group_name             = data.azurerm_resource_group.target_rg.name
+  enable_diagnostics              = local.module_enabled.log_analytics
   monitor_diagnostic_workspace_id = try(module.log_analytics["enabled"].id, null)
   tags                            = local.common_tags
 }
@@ -103,6 +105,7 @@ module "storage_accounts" {
   name                            = each.value
   location                        = var.location
   resource_group_name             = data.azurerm_resource_group.target_rg.name
+  enable_diagnostics              = local.module_enabled.log_analytics
   monitor_diagnostic_workspace_id = try(module.log_analytics["enabled"].id, null)
   tags                            = local.common_tags
 }
@@ -158,6 +161,7 @@ module "function_apps" {
   runtime_name               = "python"
   runtime_version            = "3.12"
 
+  enable_diagnostics              = local.module_enabled.log_analytics
   monitor_diagnostic_workspace_id = try(module.log_analytics["enabled"].id, null)
   tags                            = local.common_tags
 }
