@@ -88,6 +88,9 @@ jobs:
           fi
           mkdir -p tests
           cp -r ../../tests/${{ inputs.environment }}/*.tftest.hcl tests/
+          # Re-init so modules referenced by `module {}` blocks inside the test
+          # files (module-in-isolation unit tests) get installed before running.
+          terraform init -input=false
           terraform test \
             -test-directory=tests \
             -var-file=../../tests/${{ inputs.environment }}/test.tfvars
