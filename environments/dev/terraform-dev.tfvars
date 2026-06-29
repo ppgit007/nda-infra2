@@ -1,15 +1,15 @@
 # General Configuration
-location              = "eastus"      # Azure region where resources will be deployed 
-staticWebAppLocation  = "eastus2"     # Static Web App requires eastus2, westus2, etc.
-environment           = "dev"         # Environment name (e.g., dev, staging, prod)
-subscription_shortcut = "vss"         # Subscription shortcut code for resource naming
-project               = "nursedenial" # Project name for resource naming
-project_shortcut      = "nda"         # Project shortcut code for resource naming
-location_shortcut     = "eus"         # Location shortcut code (eus=eastus, eus2=eastus2, etc.)
-component             = "mycomponent" # Component name for resource naming
-owner                 = "pp@pp.com"   # Owner of the resources
-resource_group_name   = "my-rg2"      # Workload RG: function app, storage, KV, PEs deploy here
-existing_vnet_resource_group_name = "my-rg1" # Networking RG: pre-existing VNet + subnets live here
+location                          = "eastus"      # Azure region where resources will be deployed 
+staticWebAppLocation              = "eastus2"     # Static Web App requires eastus2, westus2, etc.
+environment                       = "dev"         # Environment name (e.g., dev, staging, prod)
+subscription_shortcut             = "vss"         # Subscription shortcut code for resource naming
+project                           = "nursedenial" # Project name for resource naming
+project_shortcut                  = "nda"         # Project shortcut code for resource naming
+location_shortcut                 = "eus"         # Location shortcut code (eus=eastus, eus2=eastus2, etc.)
+component                         = "mycomponent" # Component name for resource naming
+owner                             = "pp@pp.com"   # Owner of the resources
+resource_group_name               = "my-rg2"      # Workload RG: function app, storage, KV, PEs deploy here
+existing_vnet_resource_group_name = "my-rg1"      # Networking RG: pre-existing VNet + subnets live here
 
 # Key Vault
 tenant_id = "d026fded-54e6-40ed-82bc-cb6a408bc4ed" # Replace with your Azure Tenant ID
