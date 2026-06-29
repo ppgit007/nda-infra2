@@ -29,29 +29,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Build a skip list so we scan the target environment + shared modules,
-      # but ignore the other environment folders (and provider cache).
-      - name: Determine directories to skip
-        id: scope
-        run: |
-          SKIP=".git,**/.terraform"
-          for d in environments/*/ ; do
-            name=$(basename "$d")
-            if [ "$name" != "${{ inputs.environment }}" ]; then
-              SKIP="$SKIP,${d%/}"
-            fi
-          done
-          echo "skip_dirs=$SKIP" >> "$GITHUB_OUTPUT"
-          echo "Skipping directories: $SKIP"
-
-      - name: Run Trivy IaC scan
+      - name: Run Trivy IaC scan (environment)
+        # Scans the target environment as a composed root module. Trivy follows
+        # every module call, so key-vault/function-app/service-bus/etc. are all
+        # evaluated here and rolled up under the environment target.
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
-          scan-ref: .
-          skip-dirs: ${{ steps.scope.outputs.skip_dirs }}
+          scan-ref: environments/${{ inputs.environment }}
           severity: ${{ inputs.severity }}
           exit-code: '1' # fail the stage when any matching finding is detected
           format: table
           hide-progress: true
+
+      - name: Run Trivy IaC scan (all modules)
+        # Scans each module folder as its own target so every module appears on
+        # its own row in the report — making coverage explicit for reviewers,
+        # even for modules not yet wired into an environment.
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: modules
+          severity: ${{ inputs.severity }}
+          exit-code: '1' # fail the stage when any matching finding is detected
+          format: table
+          hide-progress: true
+
 
