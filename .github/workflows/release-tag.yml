@@ -1,0 +1,98 @@
+name: Release Tag
+
+on:
+  workflow_call:
+    inputs:
+      releaseType:
+        required: false
+        type: string
+        default: patch
+      releaseTagBranch:
+        required: false
+        type: string
+        default: main
+
+permissions:
+  contents: write
+
+jobs:
+  release-tag:
+    name: Create Release Tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch Tags
+        run: |
+          git fetch --tags
+
+      - name: Calculate Next Semantic Version
+        id: version
+        shell: bash
+        run: |
+
+          git fetch --tags
+          LATEST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+
+          echo "Latest Tag: ${LATEST_TAG:-None}"
+
+          if [ -z "$LATEST_TAG" ]; then
+            MAJOR=0
+            MINOR=0
+            PATCH=0
+          else
+            VERSION="${LATEST_TAG#v}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          fi
+
+          echo "Current Version: ${MAJOR}.${MINOR}.${PATCH}" 
+          echo "Release Type: ${{ inputs.releaseType }}"
+
+          case "${{ inputs.releaseType }}" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+            *)
+              echo "Invalid release type"
+              exit 1
+              ;;
+          esac
+
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        run: |
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "${{ steps.version.outputs.new_tag }}" \
+            -m "Release ${{ steps.version.outputs.new_tag }}"
+
+          git push origin "${{ steps.version.outputs.new_tag }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+
+          gh release create \
+            "${{ steps.version.outputs.new_tag }}" \
+            --title "${{ steps.version.outputs.new_tag }}" \
+            --generate-notes
+

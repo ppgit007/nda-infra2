@@ -1,0 +1,64 @@
+name: Terraform Initialize
+
+# Stage 0: resolves dynamic inputs once and exposes them as reusable outputs so
+# every downstream workflow can consume them instead of repeating event/ternary logic.
+on:
+  workflow_call:
+    outputs:
+      environment:
+        description: 'Resolved target environment (dev/qa)'
+        value: ${{ jobs.initialize.outputs.environment }}
+      release_tag:
+        description: 'Resolved release tag (may be empty)'
+        value: ${{ jobs.initialize.outputs.release_tag }}
+      run_apply:
+        description: 'Whether apply should run for this trigger (true/false)'
+        value: ${{ jobs.initialize.outputs.run_apply }}
+
+permissions:
+  contents: read
+
+jobs:
+  initialize:
+    name: Initialize (${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.vars.outputs.environment }}
+      release_tag: ${{ steps.vars.outputs.release_tag }}
+      run_apply: ${{ steps.vars.outputs.run_apply }}
+    steps:
+      - name: Resolve pipeline inputs
+        id: vars
+        run: |
+          ENVIRONMENT="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'dev' }}"
+          RELEASE_TAG="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || '' }}"
+
+          RUN_APPLY="false"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            RUN_APPLY="true"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.run_apply }}" = "true" ]; then
+            RUN_APPLY="true"
+          fi
+
+          # Fail fast on an unsupported environment before running any heavy stage.
+          case "$ENVIRONMENT" in
+            dev|qa) ;;
+            *) echo "::error::Unsupported environment '$ENVIRONMENT' (allowed: dev, qa)"; exit 1 ;;
+          esac
+
+          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "run_apply=$RUN_APPLY" >> "$GITHUB_OUTPUT"
+
+      - name: Publish initialization summary
+        run: |
+          {
+            echo "### Pipeline initialization"
+            echo ""
+            echo "| Setting | Value |"
+            echo "| --- | --- |"
+            echo "| Environment | ${{ steps.vars.outputs.environment }} |"
+            echo "| Release tag | ${{ steps.vars.outputs.release_tag || '(none)' }} |"
+            echo "| Trigger | ${{ github.event_name }} |"
+            echo "| Run apply | ${{ steps.vars.outputs.run_apply }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

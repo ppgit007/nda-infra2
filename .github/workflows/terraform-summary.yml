@@ -1,0 +1,68 @@
+name: Terraform Summary
+
+# Final stage: records the outcome of every pipeline stage for observability.
+# Stage results are passed in by the caller because a reusable workflow cannot
+# read the caller's other job results directly.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Resolved target environment'
+        required: false
+        type: string
+        default: ''
+      initialize_result:
+        required: false
+        type: string
+        default: 'skipped'
+      validate_result:
+        required: false
+        type: string
+        default: 'skipped'
+      scan_result:
+        required: false
+        type: string
+        default: 'skipped'
+      plan_result:
+        required: false
+        type: string
+        default: 'skipped'
+      apply_result:
+        required: false
+        type: string
+        default: 'skipped'
+      release_tag_result:
+        required: false
+        type: string
+        default: 'skipped'
+
+permissions:
+  contents: read
+
+jobs:
+  summary:
+    name: Pipeline summary (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish run outcome
+        run: |
+          {
+            echo "## Nurse-Denial-Infra run summary"
+            echo ""
+            echo "| Stage | Result |"
+            echo "| --- | --- |"
+            echo "| Initialize | ${{ inputs.initialize_result }} |"
+            echo "| Validate | ${{ inputs.validate_result }} |"
+            echo "| Scan (Checkov) | ${{ inputs.scan_result }} |"
+            echo "| Plan | ${{ inputs.plan_result }} |"
+            echo "| Apply | ${{ inputs.apply_result }} |"
+            echo "| Release tag | ${{ inputs.release_tag_result }} |"
+            echo ""
+            echo "Environment: \`${{ inputs.environment }}\` · Trigger: \`${{ github.event_name }}\` · Commit: \`${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail summary if any required stage failed
+        if: contains(inputs.*, 'failure')
+        run: |
+          echo "::error::One or more pipeline stages failed. See the run summary above."
+          exit 1

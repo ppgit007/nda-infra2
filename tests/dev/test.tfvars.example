@@ -1,0 +1,58 @@
+# Test Variables File for Terraform Tests
+
+Copy this file as `test.tfvars` or `terraform.tftest.tfvars` and update values for your environment.
+
+Usage:
+```bash
+cd tests/dev
+terraform test -var-file=test.tfvars
+```
+
+## Required Variables
+
+```hcl
+# Azure Tenant ID (UUID format)
+tenant_id = "your-tenant-id-here"
+
+# Container App image to deploy (must include registry and tag)
+container_app_image = "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
+
+# Static Web App name (must be unique globally)
+static_web_app_name = "test-swa-dev"
+
+# Container App name
+container_app_name = "test-ca-dev"
+```
+
+## Optional Variables
+
+```hcl
+# Override default location
+# location = "East US"
+
+# Override static web app location
+# staticWebAppLocation = "East US 2"
+
+# Override resource group name
+# resource_group_name = "my-rg1"
+
+# Override OS type
+# os_type = "Linux"
+
+# Override SKU name
+# sku_name = "PremiumV2"
+```
+
+## Example Complete File
+
+```hcl
+tenant_id                = "12345678-1234-1234-1234-123456789012"
+container_app_image      = "myregistry.azurecr.io/myapp:latest"
+static_web_app_name      = "myapp-swa-dev"
+container_app_name       = "myapp-ca-dev"
+location                 = "East US"
+staticWebAppLocation     = "East US 2"
+resource_group_name      = "my-rg1"
+os_type                  = "Windows"
+sku_name                 = "PremiumV2"
+```

@@ -1,0 +1,101 @@
+name: Terraform Apply
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Terraform environment folder'
+        required: true
+        type: string
+        default: dev
+      terraform_version:
+        description: 'Terraform CLI version'
+        required: false
+        type: string
+        default: '1.6.6'
+      release_tag:
+        description: Release tag to deploy
+        required: false
+        type: string
+      source_sha:
+        description: Exact commit SHA to apply (forwarded from plan workflow output)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  apply:
+    name: Terraform apply (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    concurrency:
+      group: terraform-apply-${{ inputs.environment }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: environments/${{ inputs.environment }}
+    env:
+      TF_IN_AUTOMATION: true
+      TF_INPUT: false
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.source_sha != '' && inputs.source_sha || (inputs.release_tag != '' && inputs.release_tag || github.sha) }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ inputs.terraform_version }}
+
+      - name: Create Terraform plugin cache
+        run: mkdir -p "$HOME/.terraform.d/plugin-cache"
+
+      - name: Configure Terraform plugin cache
+        run: echo "TF_PLUGIN_CACHE_DIR=$HOME/.terraform.d/plugin-cache" >> $GITHUB_ENV
+
+      - name: Login to Azure using OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      # - name: Run Terraform Tests
+      #   working-directory: environments/${{ inputs.environment }}
+      #   run: |
+      #     echo "Running Terraform Tests for ${{ inputs.environment }} environment..."
+      #     if [ ! -f ../../tests/${{ inputs.environment }}/test.tfvars ]; then
+      #       echo "ERROR: Dedicated Terraform test variables file not found."
+      #       echo "Create tests/${{ inputs.environment }}/test.tfvars from tests/${{ inputs.environment }}/test.tfvars.example"
+      #       exit 1
+      #     fi
+      #     mkdir -p tests
+      #     cp -r ../../tests/${{ inputs.environment }}/*.tftest.hcl tests/
+      #     terraform test -test-directory=tests -var-file=../../tests/${{ inputs.environment }}/test.tfvars
+      #   continue-on-error: false
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ github.run_id }}-${{ inputs.environment }}
+          path: environments/${{ inputs.environment }}
+    
+      - name: Terraform Apply
+        working-directory: environments/${{ inputs.environment }}
+        run: terraform apply -auto-approve tfplan
+

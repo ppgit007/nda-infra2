@@ -1,0 +1,57 @@
+name: Terraform Security Scan
+
+# IaC misconfiguration scanning with Trivy, scoped to the environment being
+# deployed (plus shared modules). Fails the stage when findings are detected.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Terraform environment folder being deployed (dev/qa)'
+        required: true
+        type: string
+        default: dev
+      severity:
+        description: 'Comma-separated severities that should fail the stage'
+        required: false
+        type: string
+        default: 'CRITICAL,HIGH'
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Trivy IaC scan (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Build a skip list so we scan the target environment + shared modules,
+      # but ignore the other environment folders (and provider cache).
+      - name: Determine directories to skip
+        id: scope
+        run: |
+          SKIP=".git,**/.terraform"
+          for d in environments/*/ ; do
+            name=$(basename "$d")
+            if [ "$name" != "${{ inputs.environment }}" ]; then
+              SKIP="$SKIP,${d%/}"
+            fi
+          done
+          echo "skip_dirs=$SKIP" >> "$GITHUB_OUTPUT"
+          echo "Skipping directories: $SKIP"
+
+      - name: Run Trivy IaC scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          skip-dirs: ${{ steps.scope.outputs.skip_dirs }}
+          severity: ${{ inputs.severity }}
+          exit-code: '1' # fail the stage when any matching finding is detected
+          format: table
+          hide-progress: true
+

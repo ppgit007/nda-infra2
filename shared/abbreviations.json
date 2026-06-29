@@ -1,0 +1,15 @@
+{
+  "resource_group": "rg",
+  "storage_account": "sa",
+  "key_vault": "kv",
+  "service_bus": "sbus",
+  "function_app": "func",
+  "app_service_plan": "asp",
+  "application_insights": "appi",
+  "log_analytics": "law",
+  "api_management": "apim",
+  "managed_identity": "mi",
+  "static_web_app": "swa",
+  "ai_search": "srch",
+  "azure_openai": "aoai"
+}

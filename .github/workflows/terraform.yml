@@ -1,0 +1,110 @@
+name: Nurse-Denial-Infra
+
+run-name: >-
+  Nurse-Denial | Env:${{
+  github.event_name == 'workflow_dispatch'
+    && github.event.inputs.environment
+    || 'dev'
+  }} | Run:${{ github.run_number }}
+
+on:
+  pull_request:
+    branches:
+      - develop
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Terraform environment folder'
+        required: true
+        type: choice
+        options:
+          - dev
+          - qa
+      
+      release_tag:
+        description: Release tag to deploy
+        required: false
+        type: string
+
+      run_apply:
+        description: 'Run apply after plan (manual dispatch only)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  # Stage 0: resolve inputs once, validate preconditions, expose reusable outputs.
+  initialize:
+    uses: ./.github/workflows/terraform-initialize.yml
+    permissions:
+      contents: read
+
+  validate:
+    needs: initialize
+    uses: ./.github/workflows/terraform-validate.yml
+    permissions:
+      contents: read
+    with:
+      environment: ${{ needs.initialize.outputs.environment }}
+
+  # Runs sequentially after validate (not in parallel).
+  scan:
+    needs: [initialize, validate]
+    uses: ./.github/workflows/terraform-scan.yml
+    permissions:
+      contents: read
+    with:
+      environment: ${{ needs.initialize.outputs.environment }}
+
+  plan:
+    needs: [initialize, validate, scan]
+    uses: ./.github/workflows/terraform-plan.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: ${{ needs.initialize.outputs.environment }}
+      release_tag: ${{ needs.initialize.outputs.release_tag }}
+    secrets: inherit # <--- THIS PASSES THE DECRYPTED SECRETS TO THE REUSABLE FILE
+
+  apply:
+    if: needs.initialize.outputs.run_apply == 'true'
+    needs: [initialize, plan]
+    uses: ./.github/workflows/terraform-apply.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: ${{ needs.initialize.outputs.environment }}
+      release_tag: ${{ needs.initialize.outputs.release_tag }}
+      source_sha: ${{ needs.plan.outputs.source_sha }}
+    secrets: inherit # <--- THIS PASSES THE DECRYPTED SECRETS TO THE REUSABLE FILE
+
+  release-tag:
+    needs: apply
+    uses: ./.github/workflows/release-tag.yml
+    permissions:
+      contents: write
+      id-token: write
+    with:
+      releaseType: patch
+      releaseTagBranch: develop
+
+  # Final stage: always runs to record the outcome of every stage (observability).
+  summary:
+    if: always()
+    needs: [initialize, validate, scan, plan, apply, release-tag]
+    uses: ./.github/workflows/terraform-summary.yml
+    permissions:
+      contents: read
+    with:
+      environment: ${{ needs.initialize.outputs.environment }}
+      initialize_result: ${{ needs.initialize.result }}
+      validate_result: ${{ needs.validate.result }}
+      scan_result: ${{ needs.scan.result }}
+      plan_result: ${{ needs.plan.result }}
+      apply_result: ${{ needs.apply.result }}
+      release_tag_result: ${{ needs.release-tag.result }}

@@ -1,0 +1,21 @@
+# Local secret files
+#*.tfvars
+#*.tfvars.json
+
+# Local execution directories (Contains downloaded providers and modules)
+**/.terraform/
+
+# Terraform crash logs
+crash.log
+crash.*.log
+
+# Terraform Cloud / Enterprise local workspaces
+.terraform.lock.hcl
+
+# Local state files (If you run terraform apply locally without a remote backend)
+*.tfstate
+*.tfstate.*
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc

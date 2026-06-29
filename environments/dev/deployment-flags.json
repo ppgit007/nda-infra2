@@ -1,0 +1,16 @@
+{
+  "managed_identity": true,
+  "key_vault": true,
+  "redis": false,
+  "service_bus": false,
+  "static_web_app": false,
+  "storage_accounts": true,
+  "app_service_plans": true,
+  "function_apps": true,
+  "app_insights": false,
+  "log_analytics": false,
+  "ai_search": false,
+  "azure_openai": false,
+  "apim": false,
+  "private_endpoints": false
+}
