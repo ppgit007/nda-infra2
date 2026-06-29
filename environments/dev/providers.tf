@@ -5,4 +5,6 @@ provider "azurerm" {
     }
   }
   resource_provider_registrations = "none"
+  # Use Azure AD for storage data-plane ops; accounts have shared_access_key disabled.
+  storage_use_azuread = true
 }
