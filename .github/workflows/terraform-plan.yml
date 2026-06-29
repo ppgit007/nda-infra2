@@ -77,19 +77,20 @@ jobs:
       - name: Terraform init
         run: terraform init -input=false
 
-      # - name: Run Terraform Tests
-      #   working-directory: environments/${{ inputs.environment }}
-      #   run: |
-      #     echo "Running Terraform Tests for ${{ inputs.environment }} environment..."
-      #     if [ ! -f ../../tests/${{ inputs.environment }}/test.tfvars ]; then
-      #       echo "ERROR: Dedicated Terraform test variables file not found."
-      #       echo "Create tests/${{ inputs.environment }}/test.tfvars from tests/${{ inputs.environment }}/test.tfvars.example"
-      #       exit 1
-      #     fi
-      #     mkdir -p tests
-      #     cp -r ../../tests/${{ inputs.environment }}/*.tftest.hcl tests/
-      #     terraform test -test-directory=tests -var-file=../../tests/${{ inputs.environment }}/test.tfvars
-      #   continue-on-error: false
+      - name: Run Terraform Tests
+        # Non-blocking for now; flip continue-on-error to false once consistently green.
+        continue-on-error: true
+        run: |
+          echo "Running Terraform tests for ${{ inputs.environment }} environment..."
+          if [ ! -d ../../tests/${{ inputs.environment }} ]; then
+            echo "No tests directory for ${{ inputs.environment }} — skipping."
+            exit 0
+          fi
+          mkdir -p tests
+          cp -r ../../tests/${{ inputs.environment }}/*.tftest.hcl tests/
+          terraform test \
+            -test-directory=tests \
+            -var-file=../../tests/${{ inputs.environment }}/test.tfvars
 
       - name: Terraform plan
         id: plan
