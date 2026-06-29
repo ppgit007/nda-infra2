@@ -22,6 +22,11 @@ variable "existing_vnet_name" {
   default     = "vss-nda-dev-eus-vnet"
 }
 
+variable "existing_vnet_resource_group_name" {
+  description = "Resource group that hosts the pre-existing VNet and subnets (networking RG)"
+  type        = string
+}
+
 variable "function_subnet_name" {
   description = "Name of the subnet used for function app VNet integration"
   type        = string

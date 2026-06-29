@@ -2,22 +2,24 @@ data "azurerm_resource_group" "target_rg" {
   name = var.resource_group_name
 }
 
+# The VNet and subnets are owned by the networking team and live in a separate RG.
+# We consume them read-only — never manage or import them here.
 data "azurerm_virtual_network" "existing" {
   name                = var.existing_vnet_name
-  resource_group_name = data.azurerm_resource_group.target_rg.name
+  resource_group_name = var.existing_vnet_resource_group_name
 }
 
 # Subnet is created and delegated (Microsoft.App/environments) by the client's
 # networking team. We consume it read-only — never manage or import it here.
 data "azurerm_subnet" "function_apps" {
   name                 = var.function_subnet_name
-  resource_group_name  = data.azurerm_resource_group.target_rg.name
+  resource_group_name  = var.existing_vnet_resource_group_name
   virtual_network_name = data.azurerm_virtual_network.existing.name
 }
 
 data "azurerm_subnet" "private_endpoints" {
   name                 = var.private_endpoint_subnet_name
-  resource_group_name  = data.azurerm_resource_group.target_rg.name
+  resource_group_name  = var.existing_vnet_resource_group_name
   virtual_network_name = data.azurerm_virtual_network.existing.name
 }
 

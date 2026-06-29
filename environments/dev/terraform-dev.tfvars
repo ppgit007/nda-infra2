@@ -8,7 +8,8 @@ project_shortcut      = "nda"         # Project shortcut code for resource namin
 location_shortcut     = "eus"         # Location shortcut code (eus=eastus, eus2=eastus2, etc.)
 component             = "mycomponent" # Component name for resource naming
 owner                 = "pp@pp.com"   # Owner of the resources
-resource_group_name   = "my-rg1"      # Name of the resource group (must be unique within the subscription)
+resource_group_name   = "my-rg2"      # Workload RG: function app, storage, KV, PEs deploy here
+existing_vnet_resource_group_name = "my-rg1" # Networking RG: pre-existing VNet + subnets live here
 
 # Key Vault
 tenant_id = "d026fded-54e6-40ed-82bc-cb6a408bc4ed" # Replace with your Azure Tenant ID
@@ -27,7 +28,7 @@ os_type  = "Linux"
 sku_name = "FC1"
 
 # Temporary deployment toggles for current subscription permissions/network constraints.
-enable_function_vnet_integration         = false
+enable_function_vnet_integration         = true
 create_function_storage_role_assignments = false
 
 # API Management (APIM)
